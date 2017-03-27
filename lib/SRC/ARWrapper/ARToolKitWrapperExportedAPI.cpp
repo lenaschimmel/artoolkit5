@@ -865,6 +865,24 @@ EXPORT_API bool arwLoadOpticalParams(const char *optical_param_name, const char 
 }
 
 // ----------------------------------------------------------------------------------------------------
+#pragma mark  Low-Level Marker Querying
+// ----------------------------------------------------------------------------------------------------
+
+EXPORT_API double arwIsMatrixCodeVisible(const int camera, const int id)
+{
+    if (!gARTK) return false;
+
+    int num = gARTK->getMarkerNum(camera);
+    ARMarkerInfo *markerInfo = gARTK->getMarkerInfo(camera);
+    for(int i = 0; i < num; i++) {
+        if(markerInfo[i].idMatrix == id && markerInfo[i].cutoffPhase == AR_MARKER_INFO_CUTOFF_PHASE_NONE) {
+            return markerInfo[i].cfMatrix;
+        }
+    }
+    return 0;
+}
+
+// ----------------------------------------------------------------------------------------------------
 #pragma mark  Java API
 // ----------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------

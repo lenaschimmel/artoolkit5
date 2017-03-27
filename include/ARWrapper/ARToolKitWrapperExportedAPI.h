@@ -553,6 +553,21 @@ extern "C" {
      */
 
     EXPORT_API bool arwLoadOpticalParams(const char *optical_param_name, const char *optical_param_buff, const int optical_param_buffLen, float *fovy_p, float *aspect_p, float m[16], float p[16]);
+
+
+    // ----------------------------------------------------------------------------------------------------
+#pragma mark  Low-Level Marker Querying
+    // ----------------------------------------------------------------------------------------------------
+    /**
+	 * Queries if a marker with given barcode/matrix code is visible. This is independent of the markers added
+	 *      using arwAddMarker, so that you can query any ID without prior registration.
+	 * @param camera 0 for mono video, 0 or 1 for stereo video
+	 * @param id		id The id / number of a barcode/matrix marker.
+	 * @return			0 if invisible, confidence otherwise
+	 */
+	EXPORT_API double arwIsMatrixCodeVisible(const int camera, const int id);
+    
+
 }
 
 #endif // !ARTOOLKITWRAPPEREXPORTEDAPI_H

@@ -105,6 +105,11 @@ private:
     bool m_videoSourceIsStereo;
     int m_videoSourceFrameStamp0;
     int m_videoSourceFrameStamp1;
+
+	ARMarkerInfo *m_markerInfo0;
+    ARMarkerInfo *m_markerInfo1;
+    int m_markerNum0;
+    int m_markerNum1;
     
     // Virtual environment parameters.
 	ARdouble m_projectionNearPlane;		///< Near plane distance for projection matrix calculation
@@ -528,6 +533,21 @@ public:
      */
     bool loadOpticalParams(const char *optical_param_name, const char *optical_param_buff, const long optical_param_buffLen, ARdouble *fovy_p, ARdouble *aspect_p, ARdouble m[16], ARdouble p[16]);
     
+	/**
+	 * Returns the marker info array for the given camera. Use getMarkerNum() to get the size of this array.
+     *
+     * @param camera 0 for mono video, 0 or 1 for stereo video
+     * @return a pointer to the first ARMarkerInfo struct in the array for the given camera.
+     */
+	ARMarkerInfo * getMarkerInfo(const int camera);
+
+	/**
+	 * Returns the numver of marker info structs returned by getMarkerInfo for the given camera.
+     *
+     * @param camera 0 for mono video, 0 or 1 for stereo video
+     * @return a number of marker infos.
+     */
+    int getMarkerNum(const int camera);
 };
 
 

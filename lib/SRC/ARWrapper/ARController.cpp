@@ -77,6 +77,10 @@ ARController::ARController() :
     m_videoSourceIsStereo(false),
     m_videoSourceFrameStamp0(0),
     m_videoSourceFrameStamp1(0),
+    m_markerInfo0(NULL),
+    m_markerInfo1(NULL),
+    m_markerNum0(0),
+    m_markerNum1(0),
     m_projectionNearPlane(10.0),
     m_projectionFarPlane(10000.0),
 	m_projectionMatrixSet(false),
@@ -519,11 +523,6 @@ bool ARController::update()
     if (doMarkerDetection) {
         logv(AR_LOG_LEVEL_DEBUG, "ARWrapper::ARController::update(): if (doMarkerDetection) true");
 
-        ARMarkerInfo *markerInfo0 = NULL;
-        ARMarkerInfo *markerInfo1 = NULL;
-        int markerNum0 = 0;
-        int markerNum1 = 0;
-
         if (!m_arHandle0 || (m_videoSourceIsStereo && !m_arHandle1)) {
             if (!initAR()) {
                 logv(AR_LOG_LEVEL_ERROR, "ARController::update(): Error initialising AR, exiting returning false");
@@ -536,16 +535,16 @@ bool ARController::update()
                 logv(AR_LOG_LEVEL_ERROR, "ARController::update(): Error: arDetectMarker(), exiting returning false");
                 return false;
             }
-            markerInfo0 = arGetMarker(m_arHandle0);
-            markerNum0 = arGetMarkerNum(m_arHandle0);
+            m_markerInfo0 = arGetMarker(m_arHandle0);
+            m_markerNum0 = arGetMarkerNum(m_arHandle0);
         }
         if (m_videoSourceIsStereo && m_arHandle1) {
             if (arDetectMarker(m_arHandle1, image1) < 0) {
                 logv(AR_LOG_LEVEL_ERROR, "ARController::update(): Error: arDetectMarker(), exiting returning false");
                 return false;
             }
-            markerInfo1 = arGetMarker(m_arHandle1);
-            markerNum1 = arGetMarkerNum(m_arHandle1);
+            m_markerInfo1 = arGetMarker(m_arHandle1);
+            m_markerNum1 = arGetMarkerNum(m_arHandle1);
         }
 
         // Update square markers.
@@ -553,17 +552,17 @@ bool ARController::update()
         if (!m_videoSourceIsStereo) {
             for (std::vector<ARMarker *>::iterator it = markers.begin(); it != markers.end(); ++it) {
                 if ((*it)->type == ARMarker::SINGLE) {
-                    success &= ((ARMarkerSquare *)(*it))->updateWithDetectedMarkers(markerInfo0, markerNum0, m_ar3DHandle);
+                    success &= ((ARMarkerSquare *)(*it))->updateWithDetectedMarkers(m_markerInfo0, m_markerNum0, m_ar3DHandle);
                 } else if ((*it)->type == ARMarker::MULTI) {
-                    success &= ((ARMarkerMulti *)(*it))->updateWithDetectedMarkers(markerInfo0, markerNum0, m_ar3DHandle);
+                    success &= ((ARMarkerMulti *)(*it))->updateWithDetectedMarkers(m_markerInfo0, m_markerNum0, m_ar3DHandle);
                 }
             }
         } else {
             for (std::vector<ARMarker *>::iterator it = markers.begin(); it != markers.end(); ++it) {
                 if ((*it)->type == ARMarker::SINGLE) {
-                    success &= ((ARMarkerSquare *)(*it))->updateWithDetectedMarkersStereo(markerInfo0, markerNum0, markerInfo1, markerNum1, m_ar3DStereoHandle, m_transL2R);
+                    success &= ((ARMarkerSquare *)(*it))->updateWithDetectedMarkersStereo(m_markerInfo0, m_markerNum0, m_markerInfo1, m_markerNum1, m_ar3DStereoHandle, m_transL2R);
                 } else if ((*it)->type == ARMarker::MULTI) {
-                    success &= ((ARMarkerMulti *)(*it))->updateWithDetectedMarkersStereo(markerInfo0, markerNum0, markerInfo1, markerNum1, m_ar3DStereoHandle, m_transL2R);
+                    success &= ((ARMarkerMulti *)(*it))->updateWithDetectedMarkersStereo(m_markerInfo0, m_markerNum0, m_markerInfo1, m_markerNum1, m_ar3DStereoHandle, m_transL2R);
                 }
             }
         }
@@ -1616,4 +1615,22 @@ bool ARController::loadOpticalParams(const char *optical_param_name, const char 
     }
 
     return true;
+}
+
+ARMarkerInfo* ARController::getMarkerInfo(const int camera)
+{
+    if(camera == 0)
+        return m_markerInfo0;
+    if(camera == 1)
+        return m_markerInfo1;
+    return NULL;
+}
+
+int ARController::getMarkerNum(const int camera)
+{
+    if(camera == 0)
+        return m_markerNum0;
+    if(camera == 1)
+        return m_markerNum1;
+    return 0;
 }
