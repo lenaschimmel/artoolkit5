@@ -51,6 +51,7 @@
 #include <math.h>
 #include <AR/ar.h>
 #include <AR/arMulti.h>
+#include <locale.h>
 
 static char *get_buff( char *buf, int n, FILE *fp );
 
@@ -70,6 +71,8 @@ ARMultiMarkerInfoT *arMultiReadConfigFile( const char *filename, ARPattHandle *p
         ARLOGperror(NULL);
         return NULL;
     }
+
+    setlocale(LC_NUMERIC, "C");
 
     get_buff(buf, 256, fp);
     if( sscanf(buf, "%d", &num) != 1 ) {
@@ -145,7 +148,7 @@ ARMultiMarkerInfoT *arMultiReadConfigFile( const char *filename, ARPattHandle *p
             if( sscanf(buf,
                        "%f %f",
                        &t1, &t2) != 2 ) {
-                ARLOGe("Error processing multimarker config file '%s', marker definition %3d: Lines 2 - 4 must be marker transform.\n", filename, i + 1);
+                ARLOGe("Error processing multimarker config file '%s', marker definition %3d: Lines 2 - 4 must be marker transform. (first case)\n", filename, i + 1);
                 goto bail;
             }
         } else j++;
@@ -161,7 +164,7 @@ ARMultiMarkerInfoT *arMultiReadConfigFile( const char *filename, ARPattHandle *p
                        &marker[i].trans[j][1],
                        &marker[i].trans[j][2],
                        &marker[i].trans[j][3]) != 4 ) {
-                ARLOGe("Error processing multimarker config file '%s', marker definition %3d: Lines 2 - 4 must be marker transform.\n", filename, i + 1);
+                ARLOGe("Error processing multimarker config file '%s', marker definition %3d: Lines 2 - 4 must be marker transform. (second case)\n", filename, i + 1);
                 goto bail;
             }
             j++;
@@ -200,12 +203,13 @@ ARMultiMarkerInfoT *arMultiReadConfigFile( const char *filename, ARPattHandle *p
     else                           marker_info->patt_type = AR_MULTI_PATTERN_DETECTION_MODE_MATRIX;
     marker_info->cfPattCutoff = AR_MULTI_CONFIDENCE_PATTERN_CUTOFF_DEFAULT;
     marker_info->cfMatrixCutoff = AR_MULTI_CONFIDENCE_MATRIX_CUTOFF_DEFAULT;
-
+    setlocale(LC_NUMERIC, "");
     return marker_info;
     
 bail:
     fclose(fp);
     free(marker);
+    setlocale(LC_NUMERIC, "");
     return NULL;
 }
 
