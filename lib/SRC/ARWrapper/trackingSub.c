@@ -44,15 +44,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct {
-    KpmHandle              *kpmHandle;      // KPM-related data.
-    ARUint8                *imageLumaPtr;   // Pointer to image being tracked.
-    int                     imageSize;      // Bytes per image.
-    float                   trans[3][4];    // Transform containing pose of tracked image.
-    int                     page;           // Assigned page number of tracked image.
-    int                     flag;           // Tracked successfully.
-} TrackingInitHandle;
-
 static void *trackingInitMain( THREAD_HANDLE_T *threadHandle );
 
 
@@ -92,6 +83,7 @@ THREAD_HANDLE_T *trackingInitInit( KpmHandle *kpmHandle )
     trackingInitHandle->imageSize = kpmHandleGetXSize(kpmHandle) * kpmHandleGetYSize(kpmHandle);
     trackingInitHandle->imageLumaPtr  = (ARUint8 *)malloc(trackingInitHandle->imageSize);
     trackingInitHandle->flag      = 0;
+    trackingInitHandle->result = malloc(sizeof(KpmResult) * 10 /* == PAGES_MAX */);
 
     threadHandle = threadInit(0, trackingInitHandle, trackingInitMain);
     return threadHandle;
@@ -117,9 +109,8 @@ int trackingInitStart( THREAD_HANDLE_T *threadHandle, ARUint8 *imageLumaPtr )
     return 0;
 }
 
-int trackingInitGetResult( THREAD_HANDLE_T *threadHandle, float trans[3][4], int *page )
+int trackingInitGetResult( THREAD_HANDLE_T *threadHandle, float trans[3][4], int *page, TrackingInitHandle **trackingInitHandle)
 {
-    TrackingInitHandle     *trackingInitHandle;
     int  i, j;
 
     if (!threadHandle || !trans || !page)  {
@@ -129,11 +120,13 @@ int trackingInitGetResult( THREAD_HANDLE_T *threadHandle, float trans[3][4], int
     
     if( threadGetStatus( threadHandle ) == 0 ) return 0;
     threadEndWait( threadHandle );
-    trackingInitHandle = (TrackingInitHandle *)threadGetArg(threadHandle);
-    if (!trackingInitHandle) return (-1);
-    if( trackingInitHandle->flag ) {
-        for (j = 0; j < 3; j++) for (i = 0; i < 4; i++) trans[j][i] = trackingInitHandle->trans[j][i];
-        *page = trackingInitHandle->page;
+    *trackingInitHandle = (TrackingInitHandle *)threadGetArg(threadHandle);
+    if (!*trackingInitHandle) return (-1);
+    if( (*trackingInitHandle)->flag ) {
+        ARLOGd("Returning info for page %d with %d pages detected overall.\n", (*trackingInitHandle)->page, (*trackingInitHandle)->resultNum);
+
+        for (j = 0; j < 3; j++) for (i = 0; i < 4; i++) trans[j][i] = (*trackingInitHandle)->trans[j][i];
+        *page = (*trackingInitHandle)->page;
         return 1;
     }
 
@@ -169,12 +162,15 @@ static void *trackingInitMain( THREAD_HANDLE_T *threadHandle )
     
     kpmGetResult( kpmHandle, &kpmResult, &kpmResultNum );
 
+    trackingInitHandle->resultNum = kpmResultNum;
+
     for(;;) {
         if( threadStartWait(threadHandle) < 0 ) break;
 
         kpmMatching(kpmHandle, imageLumaPtr);
         trackingInitHandle->flag = 0;
         for( i = 0; i < kpmResultNum; i++ ) {
+            trackingInitHandle->result[i] = kpmResult[i];
             if( kpmResult[i].camPoseF != 0 ) continue;
             ARLOGd("kpmGetPose OK.\n");
             if( trackingInitHandle->flag == 0 || err > kpmResult[i].error ) { // Take the first or best result.

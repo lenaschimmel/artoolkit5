@@ -49,9 +49,20 @@
 extern "C" {
 #endif
 
+typedef struct {
+    KpmHandle              *kpmHandle;      // KPM-related data.
+    ARUint8                *imageLumaPtr;   // Pointer to image being tracked.
+    int                     imageSize;      // Bytes per image.
+    float                   trans[3][4];    // Transform containing pose of tracked image.
+    int                     page;           // Assigned page number of tracked image.
+    int                     flag;           // Tracked successfully.
+    KpmResult                *result;
+    int                       resultNum;
+} TrackingInitHandle;
+
 THREAD_HANDLE_T *trackingInitInit( KpmHandle *kpmHandle );
 int trackingInitStart( THREAD_HANDLE_T *threadHandle, ARUint8 *imagePtrLuma );
-int trackingInitGetResult( THREAD_HANDLE_T *threadHandle, float trans[3][4], int *page );
+int trackingInitGetResult( THREAD_HANDLE_T *threadHandle, float trans[3][4], int *page, TrackingInitHandle **trackingInitHandle);
 int trackingInitQuit( THREAD_HANDLE_T **threadHandle_p );
 
 #ifdef __cplusplus
