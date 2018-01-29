@@ -47,8 +47,7 @@
 #include <AR/arMulti.h>
 #include <AR/video.h>
 
-#include <ARWrapper/Image.h>
-#include <ARWrapper/VideoSource.h>
+#include <ARWrapper/ARVideoSource.h>
 #include <ARWrapper/ARMarker.h>
 #include <ARWrapper/ARMarkerSquare.h>
 #include <ARWrapper/ARMarkerMulti.h>
@@ -62,6 +61,7 @@
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <string.h>
 #if !defined(_WINRT)
@@ -99,17 +99,19 @@ private:
 
 	char* versionString;				///< ARToolKit version string
 
-	VideoSource *m_videoSource0;          ///< VideoSource providing video frames for tracking
-	VideoSource *m_videoSource1;          ///< VideoSource providing video frames for tracking
+	ARVideoSource *m_videoSource0;      ///< VideoSource providing video frames for tracking
+	ARVideoSource *m_videoSource1;      ///< VideoSource providing video frames for tracking
     pthread_mutex_t m_videoSourceLock;
     bool m_videoSourceIsStereo;
-    int m_videoSourceFrameStamp0;
-    int m_videoSourceFrameStamp1;
+
+    AR2VideoTimestampT m_updateFrameStamp0;
+	AR2VideoTimestampT m_updateFrameStamp1;
 
 	ARMarkerInfo *m_markerInfo0;
     ARMarkerInfo *m_markerInfo1;
     int m_markerNum0;
     int m_markerNum1;
+
     
     // Virtual environment parameters.
 	ARdouble m_projectionNearPlane;		///< Near plane distance for projection matrix calculation
@@ -158,10 +160,7 @@ private:
     // ------------------------------------------------------------------------------
     // Private methods.
     // ------------------------------------------------------------------------------
-    
-    void lockVideoSource();
-    void unlockVideoSource();
-    
+
     //
     // Internal marker management.
     //
@@ -279,9 +278,16 @@ public:
 	bool startRunningStereo(const char* vconfL, const char* cparaNameL, const char* cparaBuffL, const long cparaBuffLenL,
                             const char* vconfR, const char* cparaNameR, const char* cparaBuffR, const long cparaBuffLenR,
                             const char* transL2RName, const char* transL2RBuff, const long transL2RBuffLen);
-	
+
 #if TARGET_PLATFORM_ANDROID
-    bool videoAcceptImage(JNIEnv* env, jobject obj, const int videoSourceIndex, jbyteArray pinArray, jint width, jint height, jint cameraIndex, jboolean cameraIsFrontFacing);
+    jint androidVideoPushInit(JNIEnv *env, jobject obj, jint videoSourceIndex, jint width, jint height, const char *pixelFormat, jint camera_index, jint camera_face);
+    jint androidVideoPush1(JNIEnv *env, jobject obj, jint videoSourceIndex, jbyteArray buf, jint bufSize);
+    jint androidVideoPush2(JNIEnv *env, jobject obj, jint videoSourceIndex,
+                           jobject buf0, jint buf0PixelStride, jint buf0RowStride,
+                           jobject buf1, jint buf1PixelStride, jint buf1RowStride,
+                           jobject buf2, jint buf2PixelStride, jint buf2RowStride,
+                           jobject buf3, jint buf3PixelStride, jint buf3RowStride);
+    jint androidVideoPushFinal(JNIEnv *env, jobject obj, jint videoSourceIndex);
 #endif
     
 	/**
@@ -366,13 +372,6 @@ public:
 	
     bool capture();
     
-	/**
-	 * Asks the video source to push the most recent frame into the passed-in buffer.
-     * @param videoSourceIndex Index into an array of video sources, specifying which source should be queried.
-     * @param buffer Pointer to a buffer of pixels (of type 'Color') to be filled. It is the caller's responsibility to ensure that the buffer is of sufficient size.
-     */
-    bool updateTexture(const int videoSourceIndex, Color* buffer);
-    
     /**
      * Asks the video source to push the most recent frame into the passed-in buffer.
      * @param videoSourceIndex Index into an array of video sources, specifying which source should
@@ -383,16 +382,6 @@ public:
      */
     bool updateTexture32(const int videoSourceIndex, uint32_t *buffer);
     
-#ifndef _WINRT
-	/**
-	 * Asks the video source to push the most recent frame into the OpenGL texture with the passed-in ID/name.
-     * Must be called on a thread with a valid OpenGL context and a valid OpenGL 2D texture with the given ID/name.
-     * @param videoSourceIndex Index into an array of video sources, specifying which source should be queried.
-     * @param textureID OpenGL texture ID/name of the initialised texture to push the video frame to. It is the caller's responsibility to ensure that the texture is valid and of correct size and format.
-     */
-    bool updateTextureGL(const int videoSourceIndex, const int textureID);
-#endif // !_WINRT
-
 	/**
 	 * Performs marker detection and updates all markers. The latest frame from the current 
 	 * video source is retrieved and analysed. Each marker in the collection is updated with
@@ -483,14 +472,6 @@ public:
     
     bool getNFTMultiMode() const;
 
-	/**
-	 * Populates the provided color buffer with the current contents of the debug image.
-     * @param videoSourceIndex Index into an array of video sources, specifying which source should be queried.
-     * @param buffer Pointer to a buffer of pixels (of type 'Color') to be filled. It is the caller's responsibility to ensure that the buffer is of sufficient size.
-	 * @return				true if successful, false if an error occurred
-	 */
-	bool updateDebugTexture(const int videoSourceIndex, Color* buffer);
-
     /**
      * Populates the provided buffer with the current contents of the debug image.
      * @param videoSourceIndex Index into an array of video sources, specifying which source should
@@ -507,7 +488,7 @@ public:
 	 * @param	buffer		The color buffer to populate
 	 * @return				true if successful, false if an error occurred
 	 */
-	bool getPatternImage(int patternID, Color* buffer);
+	bool getPatternImage(int patternID, uint32_t* buffer);
     
 	/**
 	 * Loads an optical parameters structure from file or from buffer.
