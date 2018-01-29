@@ -144,6 +144,7 @@ typedef void (AR_CALLBACK *AR_LOG_LOGGER_CALLBACK)(const char *logMessage);
     @seealso arLog arLog
 */
 void arLogSetLogger(AR_LOG_LOGGER_CALLBACK callback, int callBackOnlyIfOnSameThread);
+void arFlushLog();
 
 // FN(x) allows for a function-like macro x which expands to a single statement.
 #define FN(x) do {x} while (0)

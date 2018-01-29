@@ -34,7 +34,8 @@
  */
 
 #include <AR/video.h>
-#include <string.h> // strdup(), asprintf()
+#include <string.h> // strdup(), asprintf() - maybe on windows?
+#include <stdio.h> // asprintf() - on linux
 
 struct _ASPECT_RATIOS_ENTRY {
     int width;

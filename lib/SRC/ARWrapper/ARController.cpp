@@ -66,7 +66,7 @@
 #pragma mark  Singleton, constructor, destructor
 // ----------------------------------------------------------------------------------------------------
 
-static const char LOG_TAG[] = "ARController (native)";
+static const char LOG_TAG[] = "ARController (C++)";
 PFN_LOGCALLBACK ARController::logCallback = NULL;
 
 ARController::ARController() :
@@ -439,6 +439,7 @@ bool ARController::updateTextureGL(const int videoSourceIndex, const int texture
 
 bool ARController::update()
 {
+    arFlushLog();
 
 	if (state != DETECTION_RUNNING) {
         if (state != WAITING_FOR_VIDEO) {
@@ -570,7 +571,7 @@ bool ARController::update()
 
 #if HAVE_NFT
     if (doNFTMarkerDetection) {
-        logv(AR_LOG_LEVEL_DEBUG, "ARWrapper::ARController::update(): if (doNFTMarkerDetection) true");
+        //logv(AR_LOG_LEVEL_DEBUG, "ARWrapper::ARController::update(): if (doNFTMarkerDetection) true");
 
         if (!m_kpmHandle || !m_ar2Handle) {
             if (!initNFT()) {
@@ -595,17 +596,23 @@ bool ARController::update()
                 } else {
                     int ret;
                     int pageNo;
-                    ret = trackingInitGetResult(trackingThreadHandle, trackingTrans, &pageNo);
+                    TrackingInitHandle *trackingInitHandle;
+                    ret = trackingInitGetResult(trackingThreadHandle, trackingTrans, &pageNo, &trackingInitHandle);
+                    //logv(AR_LOG_LEVEL_DEBUG, "trackingInitGetResult: Result is %d", ret);
                     if (ret != 0) {
                         m_kpmBusy = false;
                         if (ret == 1) {
-                            if (pageNo >= 0 && pageNo < PAGES_MAX) {
-								if (surfaceSet[pageNo]->contNum < 1) {
-									//logv("Detected page %d.\n", pageNo);
-									ar2SetInitTrans(surfaceSet[pageNo], trackingTrans); // Sets surfaceSet[page]->contNum = 1.
-								}
-                            } else {
-                                logv(AR_LOG_LEVEL_ERROR, "ARController::update(): Detected bad page %d", pageNo);
+                            logv(AR_LOG_LEVEL_DEBUG, "trackingInitGetResult: detected %d pages", trackingInitHandle->resultNum);
+                            for(int i = 0; i < trackingInitHandle->resultNum; i++) {
+                                if (trackingInitHandle->result[i].pageNo >= 0 && trackingInitHandle->result[i].pageNo < PAGES_MAX) {
+                                    logv(AR_LOG_LEVEL_DEBUG, "Page %d has error %f.\n", trackingInitHandle->result[i].pageNo, trackingInitHandle->result[i].error);
+                                    if (surfaceSet[pageNo]->contNum < 1) {
+                                        
+                                        ar2SetInitTrans(surfaceSet[trackingInitHandle->result[i].pageNo], trackingInitHandle->result[i].camPose); // Sets surfaceSet[page]->contNum = 1.
+                                    }
+                                } else {
+                                    logv(AR_LOG_LEVEL_ERROR, "ARController::update(): Detected bad page %d", pageNo);
+                                }
                             }
                         } else /*if (ret < 0)*/ {
                             //logv("No page detected.");
@@ -643,7 +650,7 @@ bool ARController::update()
         } // trackingThreadHandle
     } // doNFTMarkerDetection
 #endif // HAVE_NFT
-    logv(AR_LOG_LEVEL_DEBUG, "ARWrapper::ARController::update(): exiting, returning true");
+    //logv(AR_LOG_LEVEL_DEBUG, "ARWrapper::ARController::update(): exiting, returning true");
 
 	return true;
 }

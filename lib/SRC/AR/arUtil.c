@@ -153,6 +153,8 @@ void arLogSetLogger(AR_LOG_LOGGER_CALLBACK callback, int callBackOnlyIfOnSameThr
     arLogLoggerCallback = callback;
     arLogLoggerCallBackOnlyIfOnSameThread = callBackOnlyIfOnSameThread;
     if (callback && callBackOnlyIfOnSameThread) {
+        (*arLogLoggerCallback)("arUtil (C): registered callback");
+
 #ifndef _WIN32
         arLogLoggerThread = pthread_self();
 #else
@@ -169,6 +171,30 @@ void arLogSetLogger(AR_LOG_LOGGER_CALLBACK callback, int callBackOnlyIfOnSameThr
 			arLogWrongThreadBufferSize = 0;
 		}
 	}
+}
+
+
+void arFlushLog()
+{
+    if (arLogLoggerCallback) {
+        if (arLogLoggerCallBackOnlyIfOnSameThread) {
+#ifndef _WIN32
+            if (!pthread_equal(pthread_self(), arLogLoggerThread))
+#else
+            if (GetCurrentThreadId() == arLogLoggerThreadID)
+#endif
+            {
+                // On log thread, print buffer if anything was in it
+                if (arLogWrongThreadBufferCount > 0) {
+                    (*arLogLoggerCallback)(arLogWrongThreadBuffer);
+                    arLogWrongThreadBufferCount = 0;
+                } else {
+                    (*arLogLoggerCallback)("Nothing to log.");
+                }
+            }
+        }
+    } 
+    
 }
 
 void arLog(const int logLevel, const char *format, ...)
