@@ -93,6 +93,8 @@ static void printPalette(int p) {
         case (V4L2_PIX_FMT_RGB24): ARLOGi("  Pix Fmt: RGB24\n"); break;
         case (V4L2_PIX_FMT_BGR32): ARLOGi("  Pix Fmt: BGR32\n"); break;
         case (V4L2_PIX_FMT_RGB32): ARLOGi("  Pix Fmt: RGB32\n"); break;
+            // Compressed formats
+        case (V4L2_PIX_FMT_MJPEG): ARLOGi("  Pix Fmt: MJPEG\n"); break;
     };
     
 }
@@ -179,7 +181,7 @@ int ar2VideoDispOptionV4L2( void )
     ARLOG(" -height=N\n");
     ARLOG("    specifies expected height of image.\n");
     ARLOG(" -palette=[GREY|HI240|RGB565|RGB555|BGR24|BGR32|YUYV|UYVY|\n");
-    ARLOG("    Y41P|YUV422P|YUV411P|YVU420|YVU410]\n");
+    ARLOG("    Y41P|YUV422P|YUV411P|YVU420|YVU410|MJPEG]\n");
     ARLOG("    specifies the camera palette (WARNING: not all options are supported by\n");
     ARLOG("    every camera).\n");
     ARLOG("IMAGE CONTROLS (WARNING: not all options are not supported by every camera):\n");
@@ -271,30 +273,32 @@ AR2VideoParamV4L2T *ar2VideoOpenV4L2(const char *config)
             else if( strncmp( a, "-palette=", 9 ) == 0 ) {
                 if( strncmp( &a[9], "GREY", 4) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_GREY;
-                } else if( strncmp( &a[9], "HI240", 3) == 0 ) {
+                } else if( strncmp( &a[9], "HI240", 5) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_HI240;
-                } else if( strncmp( &a[9], "RGB565", 3) == 0 ) {
+                } else if( strncmp( &a[9], "RGB565", 6) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_RGB565;
-                } else if( strncmp( &a[9], "RGB555", 3) == 0 ) {
+                } else if( strncmp( &a[9], "RGB555", 6) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_RGB555;
-                } else if( strncmp( &a[9], "BGR24", 3) == 0 ) {
+                } else if( strncmp( &a[9], "BGR24", 5) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_BGR24;
-                } else if( strncmp( &a[9], "BGR32", 3) == 0 ) {
+                } else if( strncmp( &a[9], "BGR32", 5) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_BGR32;
-                } else if( strncmp( &a[9], "YUYV", 3) == 0 ) {
+                } else if( strncmp( &a[9], "YUYV", 4) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_YUYV;
-                } else if( strncmp( &a[9], "UYVY", 3) == 0 ) {
+                } else if( strncmp( &a[9], "UYVY", 4) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_UYVY;
-                } else if( strncmp( &a[9], "Y41P", 3) == 0 ) {
+                } else if( strncmp( &a[9], "Y41P", 4) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_Y41P;
-                } else if( strncmp( &a[9], "YUV422P", 3) == 0 ) {
+                } else if( strncmp( &a[9], "YUV422P", 7) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_YUV422P;
-                } else if( strncmp( &a[9], "YUV411P", 3) == 0 ) {
+                } else if( strncmp( &a[9], "YUV411P", 7) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_YUV411P;
-                } else if( strncmp( &a[9], "YVU420", 3) == 0 ) {
+                } else if( strncmp( &a[9], "YVU420", 6) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_YVU420;
-                } else if( strncmp( &a[9], "YVU410", 3) == 0 ) {
+                } else if( strncmp( &a[9], "YVU410", 6) == 0 ) {
                     vid->palette = V4L2_PIX_FMT_YVU410;
+                } else if( strncmp( &a[9], "MJPG", 4) == 0 ) {
+                    vid->palette = V4L2_PIX_FMT_MJPEG;
                 }
             }
             else if( strncmp( a, "-contrast=", 10 ) == 0 ) {
@@ -396,6 +400,8 @@ AR2VideoParamV4L2T *ar2VideoOpenV4L2(const char *config)
         ARLOGe("  vd.bus_info      =   %s\n",vd.bus_info);
         ARLOGe("  vd.version       =   %d\n",vd.version);
         ARLOGe("  vd.capabilities  =   %d\n",vd.capabilities);
+        ARLOGe("  Requesting FMT:");
+        printPalette(vid->palette);
     }
     
     memset(&fmt, 0, sizeof(fmt));
