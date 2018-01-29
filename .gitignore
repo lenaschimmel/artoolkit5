@@ -6,6 +6,8 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+*~
+*.orig
 
 #### Intermediate build products
 *.o
@@ -231,3 +233,7 @@ examples/uiControlsWinRT/uiControlsWinRT.Windows/obj/*
 examples/uiControlsWinRT/uiControlsWinRT.WindowsPhone/bin/*
 examples/uiControlsWinRT/uiControlsWinRT.WindowsPhone/obj/*
 
+doit.sh
+.vscode/launch.json
+.vscode/settings.json
+*.dat
